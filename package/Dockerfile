@@ -23,8 +23,8 @@ RUN mkdir -p /etc/kube-bench/ && \
 FROM registry.suse.com/bci/bci-minimal:15.5
 RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash' > /etc/passwd && \
     echo 'securityscan:x:1000:' > /etc/group && \
-    mkdir /home/shell && \
-    chown -R shell /home/shell && \
+    mkdir /home/securityscan && \
+    chown -R securityscan /home/securityscan && \
 COPY package/cfg/ /etc/kube-bench/cfg/
 COPY package/run.sh \
     package/run_sonobuoy_plugin.sh \
