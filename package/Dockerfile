@@ -39,7 +39,7 @@ RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash'
 COPY --from=builder /usr/local/bin/kubectl /usr/local/bin/
 COPY --from=builder /usr/bin/sonobuoy /usr/bin/
 COPY --from=builder /usr/bin/kube-bench /usr/bin/
-COPY --from=builder /etc/kube-bench /etc/
+COPY --from=builder /etc/kube-bench/ /etc/kube-bench/
 
 # Copy binaries and configuration files from the local repository
 COPY package/cfg/ /etc/kube-bench/cfg/
