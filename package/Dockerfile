@@ -42,4 +42,5 @@ COPY package/run.sh \
     package/helper_scripts/check_cafile_ownership.sh \
     /usr/bin/
 COPY --from=build /usr/bin/kubectl /usr/local/bin/kube-bench /usr/bin/sonobuoy /usr/bin/
+USER 1000
 CMD ["run.sh"]
