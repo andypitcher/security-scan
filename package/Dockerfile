@@ -1,19 +1,12 @@
-FROM registry.suse.com/bci/bci-base:15.5
+FROM registry.suse.com/bci/bci-base:15.5 AS base
 
-ARG kube_bench_version=0.6.12
+ARG kube_bench_version=0.6.17
 ARG sonobuoy_version=0.56.16
 ARG kubectl_version=1.28.0
 ARG ARCH
 
-RUN zypper --non-interactive update \
-    && zypper --non-interactive install \
-    curl \
-    jq \
-    vim \
-    systemd \
-    tar \
-    awk \
-    gzip
+RUN zypper --non-interactive update && zypper --non-interactive install jq awk
+
 RUN curl -Lo ./kubectl "https://storage.googleapis.com/kubernetes-release/release/v${kubectl_version}/bin/linux/${ARCH}/kubectl" && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin/
@@ -25,6 +18,13 @@ RUN mkdir -p /etc/kube-bench/ && \
     curl -sLf "https://github.com/aquasecurity/kube-bench/archive/refs/tags/v${kube_bench_version}.tar.gz" | \
     tar xvz -C /etc/kube-bench/ --strip-components=1 "kube-bench-${kube_bench_version}/cfg"
 
+
+
+FROM registry.suse.com/bci/bci-minimal:15.5
+RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash' > /etc/passwd && \
+    echo 'securityscan:x:1000:' > /etc/group && \
+    mkdir /home/shell && \
+    chown -R shell /home/shell && \
 COPY package/cfg/ /etc/kube-bench/cfg/
 COPY package/run.sh \
     package/run_sonobuoy_plugin.sh \
@@ -41,5 +41,5 @@ COPY package/run.sh \
     package/helper_scripts/check_cafile_permissions.sh \
     package/helper_scripts/check_cafile_ownership.sh \
     /usr/bin/
-
+COPY --from=build /usr/bin/kubectl /usr/local/bin/kube-bench /usr/bin/sonobuoy /usr/bin/
 CMD ["run.sh"]
