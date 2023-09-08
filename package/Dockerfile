@@ -1,30 +1,47 @@
-FROM registry.suse.com/bci/bci-base:15.5
+# Temporary build stage
+FROM registry.suse.com/bci/bci-base:15.5 as builder
 
-ARG kube_bench_version=0.6.12
+# Define build arguments
+ARG kube_bench_version=0.6.17
 ARG sonobuoy_version=0.56.16
-ARG kubectl_version=1.26.3
+ARG kubectl_version=1.28.0
 ARG ARCH
 
-RUN zypper --non-interactive update \
-    && zypper --non-interactive install \
-    curl \
-    jq \
-    vim \
-    systemd \
-    tar \
-    awk \
-    gzip
+# Install build dependencies
+RUN zypper --non-interactive update && zypper --non-interactive install jq awk tar
+
+# Install kubectl
 RUN curl -Lo ./kubectl "https://storage.googleapis.com/kubernetes-release/release/v${kubectl_version}/bin/linux/${ARCH}/kubectl" && \
     chmod +x ./kubectl && \
     mv ./kubectl /usr/local/bin/
+
+# Install Sonobuoy
 RUN curl -sLf "https://github.com/vmware-tanzu/sonobuoy/releases/download/v${sonobuoy_version}/sonobuoy_${sonobuoy_version}_linux_${ARCH}.tar.gz" | tar -xvzf - -C /usr/bin sonobuoy
+
+# Install kube-bench
 RUN curl -sLf "https://github.com/aquasecurity/kube-bench/releases/download/v${kube_bench_version}/kube-bench_${kube_bench_version}_linux_${ARCH}.tar.gz" | tar -xvzf - -C /usr/bin
 
-# Copy the files within /cfg straight from the immutable GitHub source to /etc/kube-bench/cfg/.
+# Copy the files within /cfg straight from the immutable GitHub source to /etc/kube-bench/cfg/
 RUN mkdir -p /etc/kube-bench/ && \
     curl -sLf "https://github.com/aquasecurity/kube-bench/archive/refs/tags/v${kube_bench_version}.tar.gz" | \
     tar xvz -C /etc/kube-bench/ --strip-components=1 "kube-bench-${kube_bench_version}/cfg"
 
+# Main stage using bci-minimal as the base image
+FROM registry.suse.com/bci/bci-minimal:15.5
+
+# Create non-root user securityscan with UID 1000
+RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash' > /etc/passwd && \
+    echo 'securityscan:x:1000:' > /etc/group && \
+    mkdir /home/securityscan && \
+    chown -R securityscan:securityscan /home/securityscan
+
+# Copy binaries and configuration files from the builder stage
+COPY --from=builder /usr/local/bin/kubectl /usr/local/bin/
+COPY --from=builder /usr/bin/sonobuoy /usr/bin/
+COPY --from=builder /usr/bin/kube-bench /usr/bin/
+COPY --from=builder /etc/kube-bench/ /etc/kube-bench/
+
+# Copy binaries and configuration files from the local repository
 COPY package/cfg/ /etc/kube-bench/cfg/
 COPY package/run.sh \
     package/run_sonobuoy_plugin.sh \
@@ -41,5 +58,5 @@ COPY package/run.sh \
     package/helper_scripts/check_cafile_permissions.sh \
     package/helper_scripts/check_cafile_ownership.sh \
     /usr/bin/
-
+USER securityscan
 CMD ["run.sh"]
