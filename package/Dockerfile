@@ -29,6 +29,9 @@ RUN mkdir -p /etc/kube-bench/ && \
 # Main stage using bci-minimal as the base image
 FROM registry.suse.com/bci/bci-minimal:15.5
 
+# Install image dependencies
+RUN zypper --non-interactive update && zypper --non-interactive install systemd
+
 # Create non-root user securityscan with UID 1000
 RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash' > /etc/passwd && \
     echo 'securityscan:x:1000:' > /etc/group && \
