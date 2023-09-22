@@ -26,17 +26,13 @@ RUN mkdir -p /etc/kube-bench/ && \
     curl -sLf "https://github.com/aquasecurity/kube-bench/archive/refs/tags/v${kube_bench_version}.tar.gz" | \
     tar xvz -C /etc/kube-bench/ --strip-components=1 "kube-bench-${kube_bench_version}/cfg"
 
+RUN chown root:root /usr/bin/sonobuoy /usr/local/bin/kubectl /usr/bin/kube-bench
+
 # Main stage using bci-minimal as the base image
-FROM registry.suse.com/bci/bci-minimal:15.5
+FROM registry.suse.com/bci/bci-base:15.5
 
 # Install image dependencies
-RUN zypper --non-interactive update && zypper --non-interactive install systemd
-
-# Create non-root user securityscan with UID 1000
-RUN echo 'securityscan:x:1000:1000:securityscan,,,:/home/securityscan:/bin/bash' > /etc/passwd && \
-    echo 'securityscan:x:1000:' > /etc/group && \
-    mkdir /home/securityscan && \
-    chown -R securityscan:securityscan /home/securityscan
+RUN zypper --non-interactive update && zypper --non-interactive install systemd jq
 
 # Copy binaries and configuration files from the builder stage
 COPY --from=builder /usr/local/bin/kubectl /usr/local/bin/
@@ -61,5 +57,11 @@ COPY package/run.sh \
     package/helper_scripts/check_cafile_permissions.sh \
     package/helper_scripts/check_cafile_ownership.sh \
     /usr/bin/
-USER securityscan
+
+# Add read permission on kube-bench confs 
+RUN chmod -R +x /etc/kube-bench
+
+# Set the user to nobody user default created
+USER 65534
+
 CMD ["run.sh"]
