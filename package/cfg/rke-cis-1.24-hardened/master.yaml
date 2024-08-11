@@ -19,7 +19,8 @@ groups:
                 op: bitmask
                 value: "644"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for kube-apiserver.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for kube-apiserver.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -31,7 +32,8 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for kube-apiserver.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for kube-apiserver.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -46,7 +48,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -58,7 +61,8 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -73,7 +77,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -85,7 +90,8 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -101,7 +107,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for etcd.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for etcd.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -114,15 +121,16 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for etcd.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for etcd.
           All configuration is passed in as arguments at container run time.
         scored: true
 
       - id: 1.1.9
         text: "Ensure that the Container Network Interface file permissions are set to 600 or more restrictive (Manual)"
         audit: |
-          ps -fC ${kubeletbin:-kubelet} | grep -- --cni-conf-dir || echo "/etc/cni/net.d" | sed 's%.*cni-conf-dir[= ]\([^ ]*\).*%\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c permissions=%a
-          find /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c permissions=%a
+          ps -ef | grep -- --cni-conf-dir | grep -oP '(?<=--cni-conf-dir=)[^ ]+' | head -1 | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c "%n permissions=%a"
+          find /var/lib/cni/networks -type f ! -name lock 2> /dev/null | xargs --no-run-if-empty stat -c "%n permissions=%a"
         use_multiple_values: true
         tests:
           test_items:
@@ -131,24 +139,58 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Run the below command (based on the file location on your system) on the control plane node.
-          For example, chmod 600 <path/to/cni/files>
+          RKE uses /etc/cni/net.d/ and /var/lib/cni/networks for storing all container network interfaces configuration files and states.
+          By default, RKE doesn't set all the CNI file permissions to 600.
+          If you modify your CNI configuration, ensure that the permissions are set to 600.
+           For example, chmod 600 /var/lib/cni/networks/<filename> and/or chmod 600 /etc/cni/net.d/<filename>
+          Note that for many CNIs, a lock file is created with permissions 750. This is expected and can be ignored.
         scored: false
 
       - id: 1.1.10
-        text: "Ensure that the Container Network Interface file ownership is set to root:root (Automated)"
+        text: "Ensure that the Container Network Interface file ownership is set to root:root (Manual)"
         audit: |
-          ps -fC ${kubeletbin:-kubelet} | grep -- --cni-conf-dir || echo "/etc/cni/net.d" | sed 's%.*cni-conf-dir[= ]\([^ ]*\).*%\1%' | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c %U:%G
-          find /var/lib/cni/networks -type f 2> /dev/null | xargs --no-run-if-empty stat -c %U:%G
+          ps -ef | grep -- --cni-conf-dir | grep -oP '(?<=--cni-conf-dir=)[^ ]+' | head -1 | xargs -I{} find {} -mindepth 1 | xargs --no-run-if-empty stat -c "%n %U:%G"
+          find /var/lib/cni/networks -type f ! -name lock 2> /dev/null | xargs --no-run-if-empty stat -c "%n %U:%G"
         use_multiple_values: true
         tests:
           test_items:
             - flag: "root:root"
         remediation: |
-          Run the below command (based on the file location on your system) on the control plane node.
-          For example,
-          chown root:root <path/to/cni/files>
+          RKE uses /etc/cni/net.d/ and /var/lib/cni/networks for storing all container network interfaces configuration files and states.
+          By default, RKE sets all the CNI file ownerships to 600.
+          If this check fails, edit the file permissions to be owned by root:root.
+          For example, chown root:root /var/lib/cni/networks/<filename> and/or chown root:root /etc/cni/net.d/<filename>
+          Note that for many CNIs, a lock file is created, with ownership root:root.
         scored: false
+    
+      - id: 1.1.11
+        text: "Ensure that the etcd data directory permissions are set to 700 or more restrictive (Automated)"
+        audit: "/bin/sh -c 'if test -e $datadir; then stat -c permissions=%a $datadir; fi'"
+        tests:
+          test_items:
+            - flag: "permissions"
+              compare:
+                op: bitmask
+                value: "700"
+        remediation: |
+          On the etcd server node, get the etcd data directory, passed as an argument --data-dir,
+          from the command 'ps -ef | grep etcd'.
+          Run the below command (based on the etcd data directory found above). For example,
+          chmod 700 /var/lib/etcd
+        scored: true
+
+      - id: 1.1.12
+        text: "Ensure that the etcd data directory ownership is set to etcd:etcd (Automated)"
+        audit: "/bin/sh -c 'if test -e $datadir; then stat -c %U:%G $datadir; fi'"
+        tests:
+          test_items:
+            - flag: "etcd:etcd"
+        remediation: |
+          On the etcd server node, get the etcd data directory, passed as an argument --data-dir,
+          from the command 'ps -ef | grep etcd'.
+          Run the below command (based on the etcd data directory found above).
+          For example, chown etcd:etcd /var/lib/etcd
+        scored: true
 
       - id: 1.1.13
         text: "Ensure that the admin.conf file permissions are set to 600 or more restrictive (Automated)"
@@ -161,7 +203,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE does not store the kubernetes default kubeconfig credentials file on the nodes.
+          Not Applicable.
+          By default, cluster provisioned by RKE does not store the kubernetes default kubeconfig credentials file on the nodes.
         scored: true
 
       - id: 1.1.14
@@ -172,7 +215,8 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE does not store the kubernetes default kubeconfig credentials file on the nodes.
+          Not Applicable.
+          By default, cluster provisioned by RKE does not store the kubernetes default kubeconfig credentials file on the nodes.
         scored: true
 
       - id: 1.1.15
@@ -186,7 +230,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -198,7 +243,8 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for scheduler.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -213,7 +259,8 @@ groups:
                 op: bitmask
                 value: "600"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
           All configuration is passed in as arguments at container run time.
         scored: true
 
@@ -225,24 +272,25 @@ groups:
           test_items:
             - flag: "root:root"
         remediation: |
-          Cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
+          Not Applicable.
+          By default, cluster provisioned by RKE doesn't require or maintain a configuration file for controller-manager.
           All configuration is passed in as arguments at container run time.
         scored: true
 
       - id: 1.1.21
         text: "Ensure that the Kubernetes PKI key file permissions are set to 600 (Automated)"
-        audit: "check_files_permissions.sh '/node/etc/kubernetes/ssl/*key.pem' 600"
+        audit: "find /etc/kubernetes/ssl/ -type f -name '*key.pem' | xargs stat -c 'permissions=%a %n'"
+        use_multiple_values: true
         tests:
           test_items:
-            - flag: "true"
+            - flag: "permissions"
               compare:
-                op: eq
-                value: "true"
-              set: true
+                op: bitmask
+                value: "600"
         remediation: |
-          Run the below command (based on the file location on your system) on the control plane node.
-          For example,
-          chmod -R 600 /etc/kubernetes/ssl/*key.pem
+          By default RKE sets all the PKI Key file permissions to 600. 
+          In case this check fails, verify the permissions of each file and fix them.
+          For example, chmod -R 600 /etc/kubernetes/ssl/*key.pem
         scored: true
 
   - id: 1.2
@@ -259,9 +307,11 @@ groups:
                 value: false
               set: true
         remediation: |
-          Edit the API server pod specification file $apiserverconf
-          on the control plane node and set the below parameter.
-          --anonymous-auth=false
+          By default, RKE sets the --anonymous-auth argument to false.
+          If it is set to true, edit the RKE config file cluster.yml and remove anything similar to below.
+          kube-api:
+            extra-arg:
+              - "anonymous-auth=true"
         scored: true
 
       - id: 1.2.2
@@ -272,9 +322,11 @@ groups:
             - flag: "--token-auth-file"
               set: false
         remediation: |
-          Follow the documentation and configure alternate mechanisms for authentication. Then,
-          edit the API server pod specification file $apiserverconf
-          on the control plane node and remove the --token-auth-file=<filename> parameter.
+          By default, RKE doesn't set the --token-auth-file flag, it uses instead --client-ca-file for client certificate authentication.
+          If the falg --token-auth-file is set with a value true, edit the RKE config file cluster.yml and remove anything similar to below.
+          kube-api:
+            extra-arg:
+              - "token_auth_file=true"
         scored: true
 
       - id: 1.2.3
