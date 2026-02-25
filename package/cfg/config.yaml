@@ -229,8 +229,6 @@ version_mapping:
     - "gke-1.2.0"
   "gke-1.6.0":
     - "gke-1.6.0"
-  "aks-1.0":
-    - "aks-1.0"
   "aks-1.7":
     - "aks-1.7"
   "v1.24.17+k3s1": "k3s-cis-1.24-hardened"
@@ -258,8 +256,6 @@ target_mapping:
   "gke-1.6.0":
     - "node"
   # AKS
-  "aks-1.0":
-    - "node"
   "aks-1.7":
     - "master"
     - "node"
