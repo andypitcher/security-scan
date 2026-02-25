@@ -220,7 +220,9 @@ version_mapping:
   "1.29": "cis-1.11"
   "1.30": "cis-1.11"
   "1.31": "cis-1.11"
-  "1.32": "cis-1.11"
+  "1.32": "cis-1.12"
+  "1.33": "cis-1.12"
+  "1.34": "cis-1.12"
   "eks-1.2.0":
     - "eks-1.2.0"
   "eks-1.5.0":
@@ -297,6 +299,12 @@ target_mapping:
     - "etcd"
     - "policies"
   "cis-1.11":
+    - "master"
+    - "node"
+    - "controlplane"
+    - "etcd"
+    - "policies"
+  "cis-1.12":
     - "master"
     - "node"
     - "controlplane"
@@ -426,6 +434,12 @@ target_mapping:
     - "controlplane"
     - "etcd"
     - "policies"
+  "rke2-cis-1.12":
+    - "master"
+    - "node"
+    - "controlplane"
+    - "etcd"
+    - "policies"
 
   # K3S
   # k3s: Generic
@@ -492,6 +506,12 @@ target_mapping:
     - "etcd"
     - "policies"
   "k3s-cis-1.11":
+    - "master"
+    - "node"
+    - "controlplane"
+    - "etcd"
+    - "policies"
+  "k3s-cis-1.12":
     - "master"
     - "node"
     - "controlplane"
