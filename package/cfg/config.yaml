@@ -257,11 +257,7 @@ target_mapping:
     - "node"
   # AKS
   "aks-1.7":
-    - "master"
     - "node"
-    - "controlplane"
-    - "policies"
-    - "managedservices"
 
   # CIS - Generic profiles
   "cis-1.23":
